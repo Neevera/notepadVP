@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notepaper — Catatan Bersama</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:   #f0ebe3;
+      --ink:  #1a1a2e;
+      --gold: #FFE066;
+      --sh:   4px 4px 0 #1a1a2e;
+      --sh-h: 7px 7px 0 #1a1a2e;
+    }
+
+    body.dark {
+  --bg:   #0f172a;
+  --ink:  #e5e7eb;
+  --gold: #facc15;
+  --card: #111827;
+  --muted:#9ca3af;
+
+  --sh:   4px 4px 0 #000;
+  --sh-h: 7px 7px 0 #000;
+}
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); min-height: 100vh; color: var(--ink); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #c5b9a9; border-radius: 3px; }
+
+    @keyframes popIn   { from{opacity:0;transform:scale(0.82) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(36px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(14px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+    @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes spin    { to{transform:rotate(360deg)} }
+
+    /* ════ LOGIN ═══════════════════════════════════════════════ */
+    #login-screen {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; padding: 24px; animation: fadeIn .3s ease;
+    }
+    .lcard {
+      background: var(--gold); border: 3px solid var(--ink); border-radius: 28px;
+      padding: 48px 40px; max-width: 440px; width: 100%;
+      box-shadow: 10px 10px 0 var(--ink); text-align: center;
+      animation: slideUp .5s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .lcard .emoji { font-size: 4rem; display: block; margin-bottom: 6px; }
+    .lcard h1 {
+      font-family: 'Playfair Display', serif; font-size: 2.4rem;
+      color: var(--ink); margin-bottom: 6px; letter-spacing: -.02em;
+    }
+    .lcard .sub { font-size: .9rem; color: #555; margin-bottom: 14px; font-weight: 500; }
+    .lcard .tags { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 30px; }
+    .lcard .tag  { background: rgba(0,0,0,.09); border-radius: 999px; padding: 4px 13px; font-size: .75rem; font-weight: 600; }
+    .lcard input {
+      width: 100%; padding: 13px 20px; border-radius: 999px;
+      border: 2.5px solid var(--ink); font-family: 'DM Sans', sans-serif;
+      font-size: 1rem; outline: none; margin-bottom: 12px; background: #fff;
+      transition: box-shadow .2s;
+    }
+    .lcard input:focus { box-shadow: 3px 3px 0 var(--ink); }
+    .lbtn {
+      width: 100%; padding: 14px; border-radius: 999px; border: 2.5px solid var(--ink);
+      background: var(--ink); color: var(--gold); font-family: 'DM Sans', sans-serif;
+      font-weight: 700; font-size: 1rem; cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .lbtn:hover   { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 var(--gold); }
+    .lbtn:disabled { background: #bbb; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
+    .lcard .warn  { margin-top: 20px; font-size: .72rem; color: #888; line-height: 1.6; }
+
+    /* ════ APP ══════════════════════════════════════════════════ */
+    #app { display: none; }
+
+    /* ─ Header ────────────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(240,235,227,.93); backdrop-filter: blur(14px);
+      border-bottom: 2px solid var(--ink); padding: 14px 24px;
+    }
+    .hinner { max-width: 1200px; margin: 0 auto; }
+    .hrow1  { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+
+    .logo { font-family: 'Playfair Display', serif; font-size: clamp(1.3rem,4vw,1.8rem); color: var(--ink); flex-shrink: 0; }
+
+    .obar  { display: flex; align-items: center; gap: 8px; }
+    .dlive { width: 9px; height: 9px; border-radius: 50%; background: #55EFC4; border: 1.5px solid var(--ink); animation: blink 2s infinite; }
+    .oname {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .ohint { font-size: .72rem; color: #aaa; }
+
+    .avs { display: flex; align-items: center; margin-left: 6px; }
+    .av  {
+      width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .75rem; color: var(--ink);
+      margin-left: -8px; cursor: default; transition: transform .15s; position: relative;
+    }
+    .av:first-child { margin-left: 0; }
+    .av:hover { transform: scale(1.15) translateY(-2px); z-index: 2; }
+
+    .sw { flex: 1; min-width: 160px; max-width: 340px; margin-left: auto; }
+    .sw input {
+      width: 100%; padding: 9px 16px; border-radius: 999px;
+      border: 2px solid var(--ink); background: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: .88rem;
+      outline: none; box-shadow: 3px 3px 0 var(--ink);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .sw input:focus { box-shadow: 5px 5px 0 var(--ink); transform: translate(-1px,-1px); }
+
+    .fbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .fbtn {
+      padding: 5px 16px; border-radius: 999px; border: 2px solid var(--ink);
+      background: transparent; color: var(--ink);
+      font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: .8rem;
+      cursor: pointer; transition: all .15s;
+    }
+    .fbtn.on, .fbtn:hover { background: var(--ink); color: var(--gold); }
+    .rbtn {
+      margin-left: auto; padding: 5px 14px; border-radius: 999px;
+      border: 2px solid var(--ink); background: transparent;
+      font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: .8rem;
+      cursor: pointer; transition: all .15s;
+    }
+    .rbtn:hover { background: rgba(0,0,0,.06); }
+
+    /* ─ Main ───────────────────────────────────────────────────── */
+    main { padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
+    .grid { columns: clamp(220px,30vw,300px); column-gap: 20px; }
+
+    .spin {
+      display: none; width: 36px; height: 36px;
+      border: 3px solid rgba(0,0,0,.1); border-top-color: var(--ink);
+      border-radius: 50%; animation: spin .7s linear infinite; margin: 60px auto;
+    }
+    .empty { text-align: center; padding: 80px 20px; display: none; }
+    .empty .eico { font-size: 4rem; margin-bottom: 16px; }
+    .empty h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 8px; }
+    .empty p  { color: #888; font-size: .9rem; }
+
+    /* ─ Note card ──────────────────────────────────────────────── */
+    .nc {
+      border-radius: 16px; padding: 20px; border: 2px solid var(--ink); box-shadow: var(--sh);
+      cursor: pointer; position: relative; break-inside: avoid; margin-bottom: 20px;
+      transition: box-shadow .18s cubic-bezier(.34,1.56,.64,1), transform .18s cubic-bezier(.34,1.56,.64,1);
+      animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .nc:hover { box-shadow: var(--sh-h); transform: translate(-2px,-2px); }
+
+    .nbadge {
+      position: absolute; top: -11px; right: 14px; border: 2px solid var(--ink);
+      border-radius: 999px; padding: 2px 10px; font-size: .67rem; font-weight: 700;
+    }
+    .nbadge.mine  { background: var(--ink); color: var(--gold); }
+    .nbadge.other { background: #fff; color: var(--ink); }
+
+    .ntitle { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; color: var(--ink); word-break: break-word; margin: 6px 0 8px; }
+    .nbody  {
+      font-size: .88rem; color: #2d2d2d; line-height: 1.65; white-space: pre-wrap;
+      word-break: break-word; overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 5; -webkit-box-orient: vertical; min-height: 20px;
+    }
+    .nfoot { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .nmeta { font-size: .7rem; color: #555; line-height: 1.5; }
+    .nmeta small { font-size: .64rem; color: #999; display: block; }
+
+    .nact { display: flex; gap: 4px; position: relative; }
+    .ibtn {
+      background: rgba(0,0,0,.1); border: none; border-radius: 50%;
+      width: 28px; height: 28px; cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, transform .15s;
+    }
+    .ibtn:hover { background: rgba(0,0,0,.22); transform: scale(1.1); }
+
+    .cpop {
+      display: none; position: absolute; bottom: 32px; right: 0; background: #fff;
+      border: 2px solid var(--ink); border-radius: 12px; padding: 8px;
+      gap: 6px; flex-wrap: wrap; width: 126px;
+      box-shadow: 3px 3px 0 var(--ink); z-index: 20;
+    }
+    .cpop.open { display: flex; animation: fadeIn .15s ease; }
+    .cdot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: transform .1s; }
+    .cdot:hover { transform: scale(1.18); }
+    .cdot.on { border-color: var(--ink); }
+
+    /* ─ FAB ────────────────────────────────────────────────────── */
+    #fab {
+      position: fixed; bottom: 28px; right: 28px; width: 62px; height: 62px;
+      border-radius: 50%; background: var(--ink); color: var(--gold); font-size: 32px;
+      border: 3px solid var(--gold); cursor: pointer; box-shadow: 4px 4px 0 var(--gold);
+      display: flex; align-items: center; justify-content: center; z-index: 80;
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+    }
+    #fab:hover { transform: rotate(90deg) scale(1.08); box-shadow: 6px 6px 0 var(--gold); }
+
+    /* ─ Modal ──────────────────────────────────────────────────── */
+    #movl {
+      display: none; position: fixed; inset: 0; background: rgba(15,15,30,.78);
+      backdrop-filter: blur(6px); align-items: center; justify-content: center;
+      z-index: 100; padding: 16px;
+    }
+    #movl.open { display: flex; animation: fadeIn .15s ease; }
+    #modal {
+      border: 3px solid var(--ink); border-radius: 24px; padding: 28px;
+      width: 100%; max-width: 520px; box-shadow: 8px 8px 0 var(--ink);
+      animation: slideUp .3s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    #minfo { font-size: .75rem; color: #555; margin-bottom: 10px; }
+    #mtitle {
+      width: 100%; border: none; background: transparent;
+      font-size: 1.3rem; font-family: 'Playfair Display', serif; font-weight: 700;
+      color: var(--ink); outline: none; margin-bottom: 12px;
+      border-bottom: 2px solid rgba(0,0,0,.15); padding-bottom: 8px;
+    }
+    #mtitle::placeholder { opacity: .4; font-style: italic; }
+    #mbody {
+      width: 100%; border: none; background: transparent;
+      font-size: .95rem; font-family: 'DM Sans', sans-serif; color: #2d2d2d;
+      outline: none; resize: none; line-height: 1.7; min-height: 160px;
+    }
+    #mbody::placeholder { opacity: .4; }
+
+    .mfoot { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
+    #mcolors { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .mbtn {
+      padding: 8px 20px; border-radius: 999px; border: 2px solid var(--ink);
+      font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: .88rem;
+      cursor: pointer; transition: transform .15s, box-shadow .15s;
+    }
+    .mbtn:hover { transform: translate(-1px,-1px); }
+    .mbtn.cancel { background: rgba(0,0,0,.08); color: var(--ink); }
+    .mbtn.save   { background: var(--ink); color: var(--gold); }
+    .mbtn.save:hover { box-shadow: 3px 3px 0 var(--gold); }
+    .mbtn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ─ Toast ──────────────────────────────────────────────────── */
+    #toast {
+      display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: var(--ink); color: var(--gold); padding: 10px 24px; border-radius: 999px;
+      font-weight: 600; font-size: .9rem; box-shadow: 3px 3px 0 var(--gold);
+      border: 2px solid var(--gold); z-index: 200; white-space: nowrap;
+    }
+
+    @media(max-width:540px) { .hrow1{gap:10px} .sw{max-width:100%} }
+
+      #theme-toggle {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 2px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    #theme-toggle:hover {
+      background: var(--ink);
+      color: var(--gold);
+    }
+
+    /* surfaces in dark mode */
+    body.dark header {
+      background: rgba(2,6,23,.85);
+    }
+
+    body.dark .lcard {
+      background: var(--card);
+      color: var(--ink);
+    }
+
+    body.dark .lcard input,
+    body.dark .sw input,
+    body.dark #mtitle,
+    body.dark #mbody {
+      background: #020617;
+      color: var(--ink);
+      border-color: #374151;
+    }
+
+    body.dark .lcard input::placeholder,
+    body.dark .sw input::placeholder,
+    body.dark #mtitle::placeholder,
+    body.dark #mbody::placeholder {
+      color: #6b7280;
+    }
+
+    body.dark #toast {
+      background: #020617;
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+
+    /* NOTE TEXT tetap gelap supaya kebaca di sticky note */
+    .nc {
+      color: #020617;
+    }
+
+    body.dark .rbtn {
+    color: var(--ink);
+    border-color: var(--ink);
+    }
+
+    body.dark .rbtn:hover {
+      background: rgba(255,255,255,0.08);
+    }
+
+
+
+  </style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="lcard">
+    <span class="emoji">📋</span>
+    <h1>Notepaper By SawItSeeHad</h1>
+    <p class="sub">Notepad VP — Read &amp; edit</p>
+    <div class="tags">
+      <span class="tag">✍️ Tulis Catatan</span>
+      <span class="tag">👀 Baca Bersama</span>
+      <span class="tag">✏️ Edit Bersama</span>
+    </div>
+    <input type="text" id="li" placeholder="Nama kamu..." maxlength="30" autocomplete="off" />
+    <button class="lbtn" id="lb" disabled>Mulai Mencatat →</button>
+    <p class="warn">⚠️ Siapa saja yang membuka website ini bisa melihat &amp; mengedit</p>
+  </div>
+</div>
+
+<!-- ════ APP ══════════════════════════════════════════════════ -->
+<div id="app">
+  <header>
+    <div class="hinner">
+      <div class="hrow1">
+        <button id="theme-toggle" title="Toggle dark mode">🌙</button>
+        <h1 class="logo">📋 Notepaper</h1>
+        <div class="obar">
+          <div class="dlive"></div>
+          <span class="oname" id="dn"></span>
+          <div class="avs"    id="avw"></div>
+          <span class="ohint" id="oht"></span>
+        </div>
+        <div class="sw">
+          <input type="text" id="si" placeholder="🔍  Cari catatan..." />
+        </div>
+      </div>
+      <div class="fbar">
+        <button class="fbtn on" data-f="all"  id="ba">Semua (0)</button>
+        <button class="fbtn"    data-f="mine" id="bm">Catatan Saya (0)</button>
+        <button class="rbtn"                  id="rb">🔄 Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="spin"  id="sp"></div>
+    <div class="empty" id="em">
+      <div class="eico">🗒️</div>
+      <h2 id="et">Belum ada catatan</h2>
+      <p  id="es">Tekan + untuk mulai menulis!</p>
+    </div>
+    <div class="grid" id="gr"></div>
+  </main>
+
+  <button id="fab" title="Tambah catatan baru">+</button>
+</div>
+
+<!-- ════ MODAL ═════════════════════════════════════════════════ -->
+<div id="movl">
+  <div id="modal">
+    <p id="minfo"></p>
+    <input  type="text" id="mtitle" placeholder="Judul catatan..." maxlength="200" />
+    <textarea           id="mbody"  rows="8" placeholder="Tulis catatanmu di sini..."></textarea>
+    <div class="mfoot">
+      <div id="mcolors"></div>
+      <div style="display:flex;gap:8px">
+        <button class="mbtn cancel" id="mc">Batal</button>
+        <button class="mbtn save"   id="ms">Simpan ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════════════
+const API      = '';        // pakai origin yang sama (Vercel)
+const COLORS   = ['#FFE066','#FF6B6B','#4ECDC4','#A29BFE','#FD79A8','#55EFC4','#FDCB6E','#74B9FF'];
+const AV_PAL   = ['#FF6B6B','#4ECDC4','#A29BFE','#FDCB6E','#74B9FF','#FD79A8','#55EFC4'];
+const POLL_MS  = 5000;   // sync catatan tiap 5 detik
+const PING_MS  = 12000;  // ping presence tiap 12 detik
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let me         = null;
+let notes      = [];
+let filter     = 'all';
+let editingId  = null;
+let mColor     = COLORS[0];
+let lastSerial = null;
+
+// ══════════════════════════════════════════════════════════════
+//  API HELPERS
+// ══════════════════════════════════════════════════════════════
+async function req(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(e.error || 'Terjadi kesalahan server');
+  }
+  return res.json();
+}
+
+const api = {
+  getNotes:   ()        => req('/api/notes'),
+  addNote:    (d)       => req('/api/notes',       { method: 'POST',   body: d }),
+  editNote:   (id, d)   => req(`/api/notes/${id}`, { method: 'PUT',    body: d }),
+  deleteNote: (id)      => req(`/api/notes/${id}`, { method: 'DELETE' }),
+  ping:       ()        => req('/api/ping',         { method: 'POST',   body: { name: me } }),
+};
+
+// ══════════════════════════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════════════════════════
+const esc = s => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+const fmt = ts => new Date(ts).toLocaleDateString('id-ID', {
+  day: 'numeric', month: 'short', year: 'numeric',
+  hour: '2-digit', minute: '2-digit',
+});
+
+let toastTm;
+function toast(msg, dur = 2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.cssText = 'display:block;animation:toastIn .3s ease both';
+  clearTimeout(toastTm);
+  toastTm = setTimeout(() => el.style.display = 'none', dur);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — ONLINE BAR
+// ══════════════════════════════════════════════════════════════
+function renderOnline(list) {
+  const others = (list || []).filter(n => n !== me);
+  const wrap   = document.getElementById('avw');
+  const hint   = document.getElementById('oht');
+  wrap.innerHTML = '';
+
+  if (!others.length) {
+    hint.textContent = '· Tidak ada teman online';
+    return;
+  }
+
+  hint.textContent = `· online bersama (${others.length})`;
+  others.slice(0, 5).forEach(name => {
+    const av = document.createElement('div');
+    av.className = 'av';
+    av.style.background = AV_PAL[name.charCodeAt(0) % AV_PAL.length];
+    av.title = name;
+    av.textContent = name[0].toUpperCase();
+    wrap.appendChild(av);
+  });
+  if (others.length > 5) {
+    const m = document.createElement('div');
+    m.className = 'av'; m.style.background = '#eee';
+    m.textContent = `+${others.length - 5}`;
+    wrap.appendChild(m);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER — NOTES GRID
+// ══════════════════════════════════════════════════════════════
+function renderNotes() {
+  const q    = document.getElementById('si').value.toLowerCase();
+  const grid = document.getElementById('gr');
+  const em   = document.getElementById('em');
+  const myN  = notes.filter(n => n.author === me).length;
+
+  document.getElementById('ba').textContent = `Semua (${notes.length})`;
+  document.getElementById('bm').textContent = `Catatan Saya (${myN})`;
+
+  let list = filter === 'mine' ? notes.filter(n => n.author === me) : notes;
+  if (q) list = list.filter(n => (n.title + ' ' + n.body).toLowerCase().includes(q));
+
+  grid.innerHTML = '';
+
+  if (!list.length) {
+    em.style.display = 'block';
+    document.getElementById('et').textContent = q ? 'Catatan tidak ditemukan' : 'Belum ada catatan';
+    document.getElementById('es').textContent = q ? 'Coba kata kunci lain'    : 'Tekan + untuk mulai menulis!';
+    return;
+  }
+  em.style.display = 'none';
+
+  list.forEach((note, i) => {
+    const mine = note.author === me;
+    const card = document.createElement('div');
+    card.className = 'nc';
+    card.style.background     = note.color;
+    card.style.animationDelay = `${i * .04}s`;
+    card.dataset.id = note.id;
+
+    card.innerHTML = `
+      <div class="nbadge ${mine ? 'mine' : 'other'}">${mine ? '✦ Saya' : '✏️ ' + esc(note.author)}</div>
+      ${note.title ? `<h3 class="ntitle">${esc(note.title)}</h3>` : ''}
+      <p class="nbody">${note.body ? esc(note.body) : '<em style="opacity:.4">Catatan kosong...</em>'}</p>
+      <div class="nfoot">
+        <div class="nmeta">
+          ${fmt(note.updatedAt)}
+          ${note.editedBy && note.editedBy !== note.author
+            ? `<small>diedit: ${esc(note.editedBy)}</small>` : ''}
+        </div>
+        <div class="nact">
+          <div style="position:relative">
+            <button class="ibtn ct" title="Ganti warna">🎨</button>
+            <div class="cpop" id="cp-${note.id}">
+              ${COLORS.map(c => `<div class="cdot${c === note.color ? ' on' : ''}" data-c="${c}" style="background:${c}"></div>`).join('')}
+            </div>
+          </div>
+          <button class="ibtn db" title="Hapus catatan">🗑</button>
+        </div>
+      </div>`;
+
+    // Klik card → buka modal edit
+    card.addEventListener('click', e => {
+      if (!e.target.closest('.nact')) openModal(note);
+    });
+
+    // Toggle color picker
+    card.querySelector('.ct').addEventListener('click', e => {
+      e.stopPropagation();
+      const pop = card.querySelector('.cpop');
+      document.querySelectorAll('.cpop.open').forEach(p => p !== pop && p.classList.remove('open'));
+      pop.classList.toggle('open');
+    });
+
+    // Pilih warna
+    card.querySelectorAll('.cdot').forEach(dot => {
+      dot.addEventListener('click', async e => {
+        e.stopPropagation();
+        card.querySelector('.cpop').classList.remove('open');
+        try {
+          const updated = await api.editNote(note.id, { color: dot.dataset.c, editedBy: me });
+          notes = notes.map(n => n.id === note.id ? updated : n);
+          renderNotes();
+        } catch (err) { toast('❌ ' + err.message); }
+      });
+    });
+
+    // Hapus catatan
+    card.querySelector('.db').addEventListener('click', async e => {
+      e.stopPropagation();
+      if (!confirm('Hapus catatan ini?')) return;
+      try {
+        await api.deleteNote(note.id);
+        notes = notes.filter(n => n.id !== note.id);
+        renderNotes();
+        toast('🗑 Catatan dihapus');
+      } catch (err) { toast('❌ ' + err.message); }
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+// Tutup semua color picker saat klik di luar
+document.addEventListener('click', () => {
+  document.querySelectorAll('.cpop.open').forEach(p => p.classList.remove('open'));
+});
+
+// ══════════════════════════════════════════════════════════════
+//  SYNC FUNCTIONS
+// ══════════════════════════════════════════════════════════════
+async function fetchNotes(notify = false) {
+  try {
+    const fresh  = await api.getNotes();
+    const serial = JSON.stringify(fresh);
+    if (serial !== lastSerial) {
+      lastSerial = serial;
+      notes      = fresh;
+      renderNotes();
+      if (notify) toast('🔄 Catatan diperbarui!');
+    }
+  } catch (err) {
+    if (notify) toast('❌ Gagal refresh: ' + err.message);
+  }
+}
+
+async function doPing() {
+  try {
+    const { online } = await api.ping();
+    renderOnline(online);
+  } catch {}
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════════════════════
+function buildColors(selected) {
+  const wrap = document.getElementById('mcolors');
+  wrap.innerHTML = '';
+  COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'cdot' + (c === selected ? ' on' : '');
+    d.style.background = c;
+    d.dataset.c = c;
+    d.addEventListener('click', () => {
+      mColor = c;
+      document.getElementById('modal').style.background = c;
+      wrap.querySelectorAll('.cdot').forEach(x => x.classList.toggle('on', x.dataset.c === c));
+    });
+    wrap.appendChild(d);
+  });
+}
+
+function openModal(note = null) {
+  editingId = note ? note.id : null;
+  mColor    = note ? note.color : COLORS[Math.floor(Math.random() * COLORS.length)];
+
+  document.getElementById('modal').style.background = mColor;
+  document.getElementById('mtitle').value = note ? note.title : '';
+  document.getElementById('mbody').value  = note ? note.body  : '';
+
+  const info = document.getElementById('minfo');
+  if (note) {
+    info.innerHTML = `📝 Dibuat oleh <b>${esc(note.author)}</b>` +
+      (note.editedBy && note.editedBy !== note.author
+        ? ` · Diedit terakhir: <b>${esc(note.editedBy)}</b>` : '');
+    info.style.display = 'block';
+  } else {
+    info.style.display = 'none';
+  }
+
+  buildColors(mColor);
+  document.getElementById('movl').classList.add('open');
+  setTimeout(() => document.getElementById('mtitle').focus(), 80);
+}
+
+function closeModal() {
+  document.getElementById('movl').classList.remove('open');
+  editingId = null;
+}
+
+async function saveModal() {
+  const title = document.getElementById('mtitle').value.trim();
+  const body  = document.getElementById('mbody').value.trim();
+  if (!title && !body) { toast('⚠️ Tulis sesuatu dulu!'); return; }
+
+  const btn = document.getElementById('ms');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+  try {
+    if (editingId) {
+      const updated = await api.editNote(editingId, { title, body, color: mColor, editedBy: me });
+      notes = notes.map(n => n.id === editingId ? updated : n);
+      toast('✏️ Catatan diperbarui!');
+    } else {
+      const created = await api.addNote({ title, body, color: mColor, author: me });
+      notes = [created, ...notes];
+      toast('✨ Catatan ditambahkan!');
+    }
+    renderNotes();
+    closeModal();
+  } catch (err) {
+    toast('❌ ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Simpan ✓';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BOOT — dipanggil setelah login
+// ══════════════════════════════════════════════════════════════
+async function boot(name) {
+  me = name;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display          = 'block';
+  document.getElementById('dn').textContent             = name;
+  document.getElementById('sp').style.display           = 'block';
+
+  try {
+    notes      = await api.getNotes();
+    lastSerial = JSON.stringify(notes);
+  } catch (err) {
+    toast('❌ Tidak bisa terhubung ke server. Cek koneksi internet.', 5000);
+  }
+
+  document.getElementById('sp').style.display = 'none';
+  renderNotes();
+  await doPing();
+
+  // Polling otomatis
+  setInterval(() => fetchNotes(true), POLL_MS);
+  setInterval(doPing, PING_MS);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EVENT LISTENERS
+// ══════════════════════════════════════════════════════════════
+
+// Login
+const li = document.getElementById('li');
+const lb = document.getElementById('lb');
+li.addEventListener('input',   () => lb.disabled = !li.value.trim());
+li.addEventListener('keydown', e  => { if (e.key === 'Enter' && li.value.trim()) boot(li.value.trim()); });
+lb.addEventListener('click',   () => { if (li.value.trim()) boot(li.value.trim()); });
+
+// Search
+document.getElementById('si').addEventListener('input', renderNotes);
+
+// Filter tabs
+document.querySelectorAll('.fbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    filter = btn.dataset.f;
+    document.querySelectorAll('.fbtn').forEach(b => b.classList.toggle('on', b.dataset.f === filter));
+    renderNotes();
+  });
+});
+
+// Refresh
+document.getElementById('rb').addEventListener('click', async function () {
+  this.textContent = '⏳';
+  await fetchNotes(true);
+  this.textContent = '🔄 Refresh';
+});
+
+// FAB
+document.getElementById('fab').addEventListener('click', () => openModal());
+
+// Modal
+document.getElementById('movl').addEventListener('click', e => {
+  if (e.target === document.getElementById('movl')) closeModal();
+});
+document.getElementById('mc').addEventListener('click', closeModal);
+document.getElementById('ms').addEventListener('click', saveModal);
+document.getElementById('mtitle').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('mbody').focus();
+});
+document.getElementById('mbody').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) saveModal();
+});
+
+// ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal();
+    document.querySelectorAll('.cpop.open').forEach(p => p.classList.remove('open'));
+  }
+});
+
+// ===============================
+// THEME TOGGLE
+// ===============================
+const themeBtn = document.getElementById('theme-toggle');
+
+// load saved theme
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+  document.body.classList.add('dark');
+  themeBtn.textContent = '☀️';
+}
+
+// toggle click
+themeBtn.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+
+  const isDark = document.body.classList.contains('dark');
+
+  // update icon
+  themeBtn.textContent = isDark ? '☀️' : '🌙';
+
+  // save preference
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+});
+
+</script>
+</body>
+</html>
