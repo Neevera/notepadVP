@@ -304,7 +304,7 @@
       border-color: var(--gold);
     }
 
-    /* NOTE TEXT tetap gelap supaya kebaca di sticky note */
+    /* NOTE TEXT tetap gelap agar kebaca di sticky note */
     .nc {
       color: #020617;
     }
@@ -398,7 +398,6 @@
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════════════════════════
 const API      = '';        // pakai origin yang sama (Vercel)
@@ -407,7 +406,6 @@ const AV_PAL   = ['#FF6B6B','#4ECDC4','#A29BFE','#FDCB6E','#74B9FF','#FD79A8','#
 const POLL_MS  = 5000;   // sync catatan tiap 5 detik
 const PING_MS  = 12000;  // ping presence tiap 12 detik
 
-// ══════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════
 let me         = null;
@@ -417,7 +415,6 @@ let editingId  = null;
 let mColor     = COLORS[0];
 let lastSerial = null;
 
-// ══════════════════════════════════════════════════════════════
 //  API HELPERS
 // ══════════════════════════════════════════════════════════════
 async function req(path, opts = {}) {
@@ -441,7 +438,6 @@ const api = {
   ping:       ()        => req('/api/ping',         { method: 'POST',   body: { name: me } }),
 };
 
-// ══════════════════════════════════════════════════════════════
 //  UTILITIES
 // ══════════════════════════════════════════════════════════════
 const esc = s => String(s)
@@ -461,7 +457,6 @@ function toast(msg, dur = 2800) {
   toastTm = setTimeout(() => el.style.display = 'none', dur);
 }
 
-// ══════════════════════════════════════════════════════════════
 //  RENDER — ONLINE BAR
 // ══════════════════════════════════════════════════════════════
 function renderOnline(list) {
@@ -492,7 +487,6 @@ function renderOnline(list) {
   }
 }
 
-// ══════════════════════════════════════════════════════════════
 //  RENDER — NOTES GRID
 // ══════════════════════════════════════════════════════════════
 function renderNotes() {
@@ -593,7 +587,6 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.cpop.open').forEach(p => p.classList.remove('open'));
 });
 
-// ══════════════════════════════════════════════════════════════
 //  SYNC FUNCTIONS
 // ══════════════════════════════════════════════════════════════
 async function fetchNotes(notify = false) {
@@ -618,7 +611,6 @@ async function doPing() {
   } catch {}
 }
 
-// ══════════════════════════════════════════════════════════════
 //  MODAL
 // ══════════════════════════════════════════════════════════════
 function buildColors(selected) {
@@ -693,7 +685,6 @@ async function saveModal() {
   }
 }
 
-// ══════════════════════════════════════════════════════════════
 //  BOOT — dipanggil setelah login
 // ══════════════════════════════════════════════════════════════
 async function boot(name) {
@@ -719,7 +710,6 @@ async function boot(name) {
   setInterval(doPing, PING_MS);
 }
 
-// ══════════════════════════════════════════════════════════════
 //  EVENT LISTENERS
 // ══════════════════════════════════════════════════════════════
 
@@ -773,7 +763,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ===============================
 // THEME TOGGLE
 // ===============================
 const themeBtn = document.getElementById('theme-toggle');
