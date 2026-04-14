@@ -1,4 +1,4 @@
-# 📋 Notepaper — Vercel + Neon PostgreSQL (100% GRATIS)
+# 📋 Notepaper - Vercel + Neon PostgreSQL (100% GRATIS)
 
 Aplikasi catatan kolaboratif real-time menggunakan:
 - **Vercel** — hosting serverless gratis
