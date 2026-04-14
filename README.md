@@ -48,32 +48,6 @@ notepaper/
 
 ---
 
-### ② Push Kode ke GitHub
-
-```bash
-# Masuk ke folder project
-cd notepaper
-
-# Inisialisasi git
-git init
-git add .
-git commit -m "initial commit"
-```
-
-Buka **github.com** → klik **+** → **New repository**
-- Repository name: `notepaper`
-- Visibility: `Private` (disarankan)
-- Klik **Create repository**
-
-Copy perintah dari GitHub, contoh:
-```bash
-git remote add origin https://github.com/USERNAME/notepaper.git
-git branch -M main
-git push -u origin main
-```
-
----
-
 ### ③ Deploy ke Vercel & Set Environment Variable
 
 1. Buka **https://vercel.com** → login dengan GitHub
